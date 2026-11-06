@@ -353,8 +353,10 @@ function FilaAdmin({
         </button>
       </div>
       {p.imagen ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={p.imagen} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+        <button onClick={onEditar} aria-label={`Cambiar foto de ${p.nombre}`} className="shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={p.imagen} alt="" className="h-10 w-10 rounded-lg object-cover" />
+        </button>
       ) : null}
       <button onClick={onEditar} className="min-w-0 flex-1 text-left">
         <span className={`line-clamp-2 block font-medium leading-snug ${p.disponible ? "" : "text-apagado line-through"}`}>
