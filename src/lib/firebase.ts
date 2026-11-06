@@ -17,6 +17,13 @@ const config = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+/**
+ * UIDs de Firebase Auth con permiso de administrador (deben coincidir con
+ * firestore.rules). También se pueden sumar admins creando un documento
+ * `admins/{uid}` desde la consola, sin tocar el código.
+ */
+export const ADMINS = ["Or5332NE1WQEa3WDRLipBX2qolk1"];
+
 /** Sin variables de entorno la carta funciona en modo demostración. */
 export const firebaseConfigurado = Boolean(config.apiKey && config.projectId);
 

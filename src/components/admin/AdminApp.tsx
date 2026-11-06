@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { modoDemo, useCarta } from "@/lib/datos";
-import { obtenerAuth, obtenerDb } from "@/lib/firebase";
+import { ADMINS, obtenerAuth, obtenerDb } from "@/lib/firebase";
 import TabAjustes from "./TabAjustes";
 import TabCarta from "./TabCarta";
 import TabPrecios from "./TabPrecios";
@@ -50,6 +50,10 @@ function ConLogin() {
         setUsuario(u);
         setEsAdmin(null);
         if (!u) return;
+        if (ADMINS.includes(u.uid)) {
+          setEsAdmin(true);
+          return;
+        }
         try {
           const snap = await getDoc(doc(obtenerDb(), "admins", u.uid));
           setEsAdmin(snap.exists());

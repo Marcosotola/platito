@@ -1,30 +1,22 @@
 rules_version = '2';
 
-// La carta es pública para leer; sólo los usuarios dados de alta en la
-// colección `admins` (documento con su UID) pueden modificarla.
+// La carta es pública para leer. Sólo pueden modificarla los admins:
+// los UIDs listados acá (mismo listado que ADMINS en src/lib/firebase.ts)
+// o quien tenga un documento admins/{uid} creado desde la consola.
 service cloud.firestore {
   match /databases/{database}/documents {
     function esAdmin() {
-      return request.auth != null
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return request.auth != null && (
+        request.auth.uid in ['Or5332NE1WQEa3WDRLipBX2qolk1']
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
     }
 
-    match /menus/{id} {
-      allow read: if true;
-      allow write: if esAdmin();
+    match /{col}/{id} {
+      allow read: if col in ['menus', 'categorias', 'productos', 'configuracion'];
+      allow write: if esAdmin() && col != 'admins';
     }
-    match /categorias/{id} {
-      allow read: if true;
-      allow write: if esAdmin();
-    }
-    match /productos/{id} {
-      allow read: if true;
-      allow write: if esAdmin();
-    }
-    match /configuracion/{id} {
-      allow read: if true;
-      allow write: if esAdmin();
-    }
+
     match /admins/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow write: if false; // se cargan a mano desde la consola
