@@ -36,6 +36,65 @@ function fuente(variable: string) {
   );
 }
 
+/** QR cuadrado con el nombre del local arriba y una indicación abajo. */
+async function dibujarQRConTitulo(
+  url: string,
+  nombre: string,
+  bajada: string,
+  oscuro: string,
+) {
+  const W = 1600;
+  const H = 2000;
+  const titulo = fuente("--font-titulo");
+  const cuerpo = fuente("--font-cuerpo");
+  await Promise.all([
+    document.fonts.load(`600 100px ${titulo}`),
+    document.fonts.load(`500 40px ${cuerpo}`),
+  ]).catch(() => undefined);
+
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext("2d")!;
+  const espaciado = (v: string) => {
+    if ("letterSpacing" in ctx) (ctx as unknown as { letterSpacing: string }).letterSpacing = v;
+  };
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = oscuro;
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.roundRect(40, 40, W - 80, H - 80, 70);
+  ctx.stroke();
+
+  ctx.fillStyle = oscuro;
+  ctx.textAlign = "center";
+  espaciado("6px");
+  ctx.font = `600 190px ${titulo}`;
+  ctx.fillText(nombre.toUpperCase(), W / 2, 300, W - 240);
+  espaciado("14px");
+  ctx.font = `600 58px ${cuerpo}`;
+  ctx.fillText(bajada.toUpperCase(), W / 2, 410, W - 240);
+  ctx.fillRect(W / 2 - 330, 455, 660, 5);
+
+  const lado = 1100;
+  const qr = await cargarImagen(
+    await QRCode.toDataURL(url, {
+      width: lado,
+      margin: 0,
+      errorCorrectionLevel: "H",
+      color: { dark: oscuro, light: "#ffffff" },
+    }),
+  );
+  ctx.drawImage(qr, (W - lado) / 2, 560, lado, lado);
+
+  espaciado("0px");
+  ctx.fillStyle = "#13204a";
+  ctx.font = `500 60px ${cuerpo}`;
+  ctx.fillText("Escaneá con la cámara para ver la carta", W / 2, 1810, W - 200);
+  return c.toDataURL("image/png");
+}
+
 /** Cartel para mesa tamaño A6 (1240 × 1748 px, 300 dpi). */
 async function dibujarCartel(url: string, nombre: string, subtitulo: string) {
   const W = 1240;
@@ -153,10 +212,12 @@ export default function TabQR({ carta }: { carta: Carta }) {
   const [destino, setDestino] = useState("");
   const [color, setColor] = useState<keyof typeof COLORES>("azul");
   const [vista, setVista] = useState("");
+  const [conTitulo, setConTitulo] = useState("");
   const [cartel, setCartel] = useState("");
 
   const url = origen ? `${origen}/${destino ? `#${destino}` : ""}` : "";
   const oscuro = COLORES[color].oscuro;
+  const bajada = carta.menus.find((m) => m.id === destino)?.nombre || "Nuestra carta";
 
   useEffect(() => {
     if (!url) return;
@@ -166,8 +227,9 @@ export default function TabQR({ carta }: { carta: Carta }) {
       errorCorrectionLevel: "H",
       color: { dark: oscuro, light: "#ffffff" },
     }).then(setVista);
+    dibujarQRConTitulo(url, carta.config.nombre || "Platito", bajada, oscuro).then(setConTitulo);
     dibujarCartel(url, carta.config.nombre || "Platito", carta.config.subtitulo).then(setCartel);
-  }, [url, oscuro, carta.config.nombre, carta.config.subtitulo]);
+  }, [url, oscuro, bajada, carta.config.nombre, carta.config.subtitulo]);
 
   const sufijo = destino ? `-${destino}` : "";
   const esLocal = /localhost|127\.0\.0\.1/.test(origen);
@@ -231,10 +293,22 @@ export default function TabQR({ carta }: { carta: Carta }) {
         </div>
 
         <div className="flex flex-col items-center gap-4 rounded-2xl bg-white p-5 ring-1 ring-linea">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {vista && <img src={vista} alt="Código QR de la carta" className="h-56 w-56" />}
+          {conTitulo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={conTitulo} alt="Código QR de la carta con título" className="w-56 rounded-xl ring-1 ring-linea" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            vista && <img src={vista} alt="Código QR de la carta" className="h-56 w-56" />
+          )}
           <div className="flex flex-wrap justify-center gap-2">
             <Boton
+              disabled={!conTitulo}
+              onClick={() => descargar(conTitulo, `qr-platito${sufijo}.png`)}
+            >
+              <Download size={17} /> QR con título
+            </Boton>
+            <Boton
+              variante="secundario"
               onClick={async () =>
                 descargar(
                   await QRCode.toDataURL(url, {
@@ -243,11 +317,11 @@ export default function TabQR({ carta }: { carta: Carta }) {
                     errorCorrectionLevel: "H",
                     color: { dark: oscuro, light: "#ffffff" },
                   }),
-                  `qr-platito${sufijo}.png`,
+                  `qr-platito-solo${sufijo}.png`,
                 )
               }
             >
-              <Download size={17} /> PNG
+              <Download size={17} /> Solo el código
             </Boton>
             <Boton
               variante="secundario"
@@ -266,6 +340,10 @@ export default function TabQR({ carta }: { carta: Carta }) {
               <FileImage size={17} /> SVG (para imprenta)
             </Boton>
           </div>
+          <p className="text-center text-xs text-apagado">
+            <b>Solo el código</b> y <b>SVG</b> sirven para sumar el QR a un diseño propio
+            (Canva, imprenta). El SVG no pierde calidad aunque se imprima gigante.
+          </p>
         </div>
       </div>
 

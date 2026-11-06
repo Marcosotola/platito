@@ -28,8 +28,9 @@ const config = {
  */
 export const ADMINS = ["Or5332NE1WQEa3WDRLipBX2qolk1"];
 
-/** Sin variables de entorno la carta funciona en modo demostración. */
-export const firebaseConfigurado = Boolean(config.apiKey && config.projectId);
+/** Con NEXT_PUBLIC_MODO_DEMO=1 la carta funciona sin Firebase (para probar). */
+export const firebaseConfigurado =
+  process.env.NEXT_PUBLIC_MODO_DEMO !== "1" && Boolean(config.apiKey && config.projectId);
 
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
