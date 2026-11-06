@@ -35,6 +35,7 @@ export default function EditorProducto({
 }) {
   const [nombre, setNombre] = useState(producto?.nombre ?? "");
   const [descripcion, setDescripcion] = useState(producto?.descripcion ?? "");
+  const [detalle, setDetalle] = useState(producto?.detalle ?? "");
   const [precio, setPrecio] = useState(precioEditable(producto?.precio));
   const [variantes, setVariantes] = useState<VarianteEdit[]>(
     (producto?.variantes ?? []).map((v) => ({
@@ -75,6 +76,7 @@ export default function EditorProducto({
       categoriaId: catId,
       nombre: nombre.trim(),
       descripcion: descripcion.trim(),
+      detalle: detalle.trim(),
       precio: leerPrecio(precio),
       variantes: variantes
         .filter((v) => v.nombre.trim())
@@ -182,12 +184,24 @@ export default function EditorProducto({
           </div>
         </div>
 
-        <Campo etiqueta="Descripción" ayuda="Opcional. Ingredientes, acompañamiento, tamaño…">
-          <textarea
-            className={`${claseEntrada} min-h-20`}
+        <Campo etiqueta="Descripción corta" ayuda="Una línea que se ve en la lista. Ej: acompañamiento o tamaño.">
+          <input
+            className={claseEntrada}
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             placeholder="Ej: Con papas fritas o ensalada"
+          />
+        </Campo>
+
+        <Campo
+          etiqueta="Detalle del plato"
+          ayuda="Opcional. Qué lleva y cómo está hecho. Se ve cuando el cliente toca el plato."
+        >
+          <textarea
+            className={`${claseEntrada} min-h-28`}
+            value={detalle}
+            onChange={(e) => setDetalle(e.target.value)}
+            placeholder="Ej: Masa casera rellena de acelga y ricota, gratinada al horno con salsa de tomate natural."
           />
         </Campo>
 

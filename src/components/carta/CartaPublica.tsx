@@ -82,7 +82,7 @@ export default function CartaPublica() {
     return carta.productos
       .filter((p) => catsActivas.has(p.categoriaId))
       .filter((p) =>
-        normalizar(`${p.nombre} ${p.descripcion ?? ""} ${(p.etiquetas ?? []).join(" ")}`).includes(q),
+        normalizar(`${p.nombre} ${p.descripcion ?? ""} ${p.detalle ?? ""} ${(p.etiquetas ?? []).join(" ")}`).includes(q),
       )
       .map((p) => ({ p, cat: catsActivas.get(p.categoriaId)! }));
   }, [busqueda, carta, menus]);
@@ -360,7 +360,7 @@ export default function CartaPublica() {
         </a>
       )}
 
-      {foto && <VisorFoto p={foto} onCerrar={() => setFoto(null)} />}
+      {foto && <FichaProducto p={foto} onCerrar={() => setFoto(null)} />}
     </main>
   );
 }
@@ -404,21 +404,32 @@ function FilaProducto({
 }) {
   const variantes = (p.variantes ?? []).filter((v) => v.nombre.trim());
   const mostrarPrecio = !(p.precio === null && variantes.length > 0);
+  const tieneFicha = Boolean(p.imagen || p.detalle?.trim());
   return (
     <article
+      {...(tieneFicha
+        ? {
+            role: "button",
+            tabIndex: 0,
+            "aria-label": `Ver detalle de ${p.nombre}`,
+            onClick: () => onFoto(p),
+            onKeyDown: (e: React.KeyboardEvent) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onFoto(p);
+              }
+            },
+          }
+        : {})}
       className={`flex gap-4 border-b border-dashed border-linea py-4 last:border-b-0 ${
         p.disponible ? "" : "opacity-55"
-      }`}
+      } ${tieneFicha ? "-mx-2 cursor-pointer rounded-2xl px-2 transition active:bg-crema sm:hover:bg-crema/70" : ""}`}
     >
       {p.imagen ? (
-        <button
-          onClick={() => onFoto(p)}
-          className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-linea ring-1 ring-linea sm:h-24 sm:w-24"
-          aria-label={`Ver foto de ${p.nombre}`}
-        >
+        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-linea ring-1 ring-linea sm:h-24 sm:w-24">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={p.imagen} alt={p.nombre} loading="lazy" className="h-full w-full object-cover" />
-        </button>
+        </div>
       ) : null}
       <div className="min-w-0 flex-1">
         {contexto && (
@@ -442,6 +453,9 @@ function FilaProducto({
         </div>
         {p.descripcion && (
           <p className="mt-0.5 text-[14px] leading-snug text-apagado">{p.descripcion}</p>
+        )}
+        {p.detalle?.trim() && (
+          <p className="mt-1 text-[13px] font-semibold text-azul">Ver más ›</p>
         )}
         {variantes.length > 0 && (
           <ul className="mt-2 space-y-1">
@@ -495,7 +509,7 @@ function Etiqueta({
 function TarjetaDestacada({ p, onFoto }: { p: Producto; onFoto: (p: Producto) => void }) {
   return (
     <button
-      onClick={() => (p.imagen ? onFoto(p) : undefined)}
+      onClick={() => onFoto(p)}
       className="group relative flex h-44 w-40 shrink-0 snap-start flex-col justify-end overflow-hidden rounded-3xl bg-azul p-3 text-left text-white shadow-md sm:w-48"
     >
       {p.imagen ? (
@@ -519,30 +533,97 @@ function TarjetaDestacada({ p, onFoto }: { p: Producto; onFoto: (p: Producto) =>
   );
 }
 
-function VisorFoto({ p, onCerrar }: { p: Producto; onCerrar: () => void }) {
+function FichaProducto({ p, onCerrar }: { p: Producto; onCerrar: () => void }) {
   useEffect(() => {
     const f = (e: KeyboardEvent) => e.key === "Escape" && onCerrar();
     window.addEventListener("keydown", f);
-    return () => window.removeEventListener("keydown", f);
+    const anterior = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", f);
+      document.body.style.overflow = anterior;
+    };
   }, [onCerrar]);
+  const variantes = (p.variantes ?? []).filter((v) => v.nombre.trim());
+  const mostrarPrecio = !(p.precio === null && variantes.length > 0);
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-azul-noche/60 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={onCerrar}
       role="dialog"
       aria-modal="true"
       aria-label={p.nombre}
     >
-      <figure className="aparecer w-full max-w-md overflow-hidden rounded-3xl bg-papel">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={p.imagen} alt={p.nombre} className="max-h-[70dvh] w-full object-cover" />
-        <figcaption className="flex items-baseline justify-between gap-3 p-4">
-          <span className="font-display text-lg font-medium">{p.nombre}</span>
-          <span className="font-display text-lg font-semibold text-azul">
-            {precioPrincipal(p)}
-          </span>
-        </figcaption>
-      </figure>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="aparecer relative flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[28px] bg-papel shadow-2xl sm:rounded-[28px]"
+      >
+        <button
+          onClick={onCerrar}
+          aria-label="Cerrar"
+          className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-tinta shadow-md"
+        >
+          <X size={18} />
+        </button>
+        <div className="overflow-y-auto">
+          {p.imagen ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.imagen} alt={p.nombre} className="aspect-[4/3] w-full object-cover" />
+          ) : (
+            <div className="azulejos h-16 w-full" />
+          )}
+          <div className="space-y-4 p-5 pb-8">
+            <div>
+              <div className="flex items-baseline gap-3">
+                <h2 className="flex-1 font-display text-2xl font-semibold leading-tight">
+                  {p.nombre}
+                </h2>
+                {mostrarPrecio && (
+                  <span className="shrink-0 font-display text-xl font-semibold tabular-nums text-azul">
+                    {precioPrincipal(p)}
+                  </span>
+                )}
+              </div>
+              {p.descripcion && <p className="mt-1 text-[15px] text-apagado">{p.descripcion}</p>}
+            </div>
+
+            {(!p.disponible || p.destacado || (p.etiquetas ?? []).length > 0) && (
+              <div className="flex flex-wrap gap-1.5">
+                {!p.disponible && <Etiqueta tono="gris">Agotado</Etiqueta>}
+                {p.destacado && <Etiqueta tono="ambar">★ Recomendado</Etiqueta>}
+                {(p.etiquetas ?? []).map((e) => (
+                  <Etiqueta key={e} tono={e === "Sin TACC" || e === "Veggie" ? "verde" : "azul"}>
+                    {e}
+                  </Etiqueta>
+                ))}
+              </div>
+            )}
+
+            {variantes.length > 0 && (
+              <ul className="space-y-1.5 rounded-2xl bg-crema p-4">
+                {variantes.map((v, i) => (
+                  <li key={i} className="flex items-baseline gap-2 text-[15px]">
+                    <span>{v.nombre}</span>
+                    <span className="mb-1 flex-1 border-b border-dotted border-tinta/25" />
+                    <span className="font-semibold tabular-nums text-azul">{precioTexto(v.precio)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {p.detalle?.trim() && (
+              <div>
+                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-azul">
+                  El plato
+                </p>
+                <p className="whitespace-pre-line text-[15.5px] leading-relaxed text-tinta/90">
+                  {p.detalle}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

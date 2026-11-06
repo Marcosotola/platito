@@ -26,6 +26,8 @@ export type Producto = {
   categoriaId: string;
   nombre: string;
   descripcion?: string;
+  /** Texto largo (qué lleva, cómo se hace): se ve al tocar el plato. */
+  detalle?: string;
   /** null = "Consultar". Si hay variantes con precio, se muestran esas. */
   precio: number | null;
   variantes?: Variante[];
