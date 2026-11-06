@@ -340,6 +340,11 @@ export default function CartaPublica() {
               )}
             </div>
           </div>
+          <p className="pb-4 text-center">
+            <a href="/admin" className="text-xs text-apagado/60 hover:text-azul">
+              Acceso del local
+            </a>
+          </p>
         </footer>
       )}
 
