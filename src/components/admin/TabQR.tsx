@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { Copy, Download, ExternalLink, FileImage, Printer } from "lucide-react";
+import { Copy, Download, ExternalLink, Printer } from "lucide-react";
 import type { Carta } from "@/lib/datos";
 import { Boton, Campo, avisar, claseEntrada } from "./ui";
 
@@ -323,26 +323,9 @@ export default function TabQR({ carta }: { carta: Carta }) {
             >
               <Download size={17} /> Solo el código
             </Boton>
-            <Boton
-              variante="secundario"
-              onClick={async () => {
-                const svg = await QRCode.toString(url, {
-                  type: "svg",
-                  margin: 2,
-                  errorCorrectionLevel: "H",
-                  color: { dark: oscuro, light: "#ffffff" },
-                });
-                const blob = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-                descargar(blob, `qr-platito${sufijo}.svg`);
-                setTimeout(() => URL.revokeObjectURL(blob), 2000);
-              }}
-            >
-              <FileImage size={17} /> SVG (para imprenta)
-            </Boton>
           </div>
           <p className="text-center text-xs text-apagado">
-            <b>Solo el código</b> y <b>SVG</b> sirven para sumar el QR a un diseño propio
-            (Canva, imprenta). El SVG no pierde calidad aunque se imprima gigante.
+            <b>Solo el código</b> sirve para sumar el QR a un diseño propio (Canva, flyers).
           </p>
         </div>
       </div>
